@@ -7,9 +7,11 @@
         body { margin: 0; padding: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
         #map { flex-grow: 1; width: 100%; height: 500px; }
         .input-panel { padding: 20px; background: white; border-top: 1px solid #ccc; display: flex; gap: 10px; justify-content: center; align-items: center; }
-        #qrcode { margin-left: 15px; }
-        input, button { padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .container {
+          display: flex; /* Aligns children horizontally */
+          align-items: center; /* Vertically centers the text relative to the image */
+          gap: 15px; /* Adds space between the image and text */
+        }
     </style>
 </head>
 <body>
@@ -17,10 +19,10 @@
     <div id="map"></div>
 
     <div class="input-panel">
-        <input type="text" id="city" placeholder="City (e.g. Toronto)">
-        <input type="text" id="country" placeholder="Country (e.g. Canada)">
-        <button onclick="submitLoc()">Add My City</button>
-        <div id="qrcode"></div>
+    	<div class="container">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/General_Motors_%282021%29.svg/960px-General_Motors_%282021%29.svg.png" width="80" height="80">
+          <h1>Oshawa Campus Origins Map</h1>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
