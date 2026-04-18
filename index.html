@@ -49,21 +49,32 @@
         }
         
         // 3. THE REALTIME LISTENER
-        // This waits for any changes to the 'locations' table
+        // Ensure map is defined globally at the top of your script
+        var map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // The Realtime Listener
         mapDb
           .channel('schema-db-changes')
           .on(
             'postgres_changes',
             {
-              event: '*', // Listen for inserts, updates, and deletes
+              event: 'INSERT', // Only listen for new pins
               schema: 'public',
               table: 'locations',
             },
             (payload) => {
-                console.log('Change received!', payload);
-                // If it's a new pin or an update, just refresh the map view
-                // For a simple project, reloading the data is cleanest:
-                addPinToMap(payload.new); 
+                console.log('New pin received:', payload);
+                
+                // FIX: Ensure we use the 'new' property from the payload
+                const newPin = payload.new;
+                
+                // Double check that we have lat/lon before trying to add to map
+                if (newPin && newPin.lat && newPin.lon) {
+                    L.marker([newPin.lat, newPin.lon])
+                     .addTo(map) // This 'map' must match your L.map variable above
+                     .bindPopup(`<b>${newPin.city}</b>: ${newPin.count} user(s)`);
+                }
             }
           )
           .subscribe();
