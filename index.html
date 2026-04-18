@@ -28,53 +28,50 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
-        // 1. Define variables with NO spaces or trailing slashes
-        const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co'.trim();
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4'.trim();
-       
-        // ... (Your existing SB_URL and SB_KEY code) ...
+        // 1. Setup global variables first
+        const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
         const mapDb = supabase.createClient(SB_URL, SB_KEY);
         
-        // 1. Create a place to store our markers so we can find them later
         const markerStorage = {};
         
-        // 2. Updated function to handle pins
-        function addPinToMap(l) {
-            const key = `${l.city}-${l.country}`;
-            
-            // If a pin for this city already exists on the map, remove it first
-            if (markerStorage[key]) {
-                map.removeLayer(markerStorage[key]);
-            }
+        // 2. Initialize the Map
+        var map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
-            // Create the new marker with the updated count
+        // 3. Define the functions (Put these BEFORE they are called)
+        function addPinToMap(l) {
+            if (!l) return;
+            const key = `${l.city}-${l.country}`;
+            if (markerStorage[key]) map.removeLayer(markerStorage[key]);
+        
             const newMarker = L.marker([l.lat, l.lon])
                 .addTo(map)
                 .bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
             
-            // Save the new marker to our storage
             markerStorage[key] = newMarker;
         }
         
-        // 3. Update the Realtime Listener
+        async function loadPins() {
+            const { data } = await mapDb.from('locations').select('*');
+            if (data) data.forEach(l => addPinToMap(l));
+        }
+        
+        // 4. Start the Realtime Listener
         mapDb
           .channel('schema-db-changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // Listen for both INSERT and UPDATE
-              schema: 'public',
-              table: 'locations',
-            },
-            (payload) => {
-                // Use payload.new to get the updated row data
-                if (payload.new && payload.new.lat) {
-                    addPinToMap(payload.new);
-                }
-            }
-          )
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, 
+          (payload) => {
+              if (payload.new && payload.new.lat) {
+                  addPinToMap(payload.new);
+              } else if (payload.eventType === 'DELETE') {
+                  // If you delete from admin, this clears the pin from the map too!
+                  location.reload(); 
+              }
+          })
           .subscribe();
         
+        // 5. Run the initial load
         loadPins();
     </script>
 </body>
