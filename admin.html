@@ -37,66 +37,69 @@
     </div>
 
     <script>
-        // 1. Configuration (Same as your map page)
-        const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
+        // Wrap everything in a listener that waits for the page to load
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Configuration
+            const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
+            const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
         
-        // 2. Initialize with a unique name
-        const adminDb = supabase.createClient(SB_URL, SB_KEY);
+            // 2. Initialize
+            const adminDb = supabase.createClient(SB_URL, SB_KEY);
         
-        const loginSection = document.getElementById('login-section');
-        const adminSection = document.getElementById('admin-section');
-        const locationList = document.getElementById('location-list');
+            const loginSection = document.getElementById('login-section');
+            const adminSection = document.getElementById('admin-section');
+            const locationList = document.getElementById('location-list');
         
-        // 3. Listen for Auth Changes
-        adminDb.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                loginSection.style.display = 'none';
-                adminSection.style.display = 'block';
-                fetchLocations();
-            } else {
-                loginSection.style.display = 'block';
-                adminSection.style.display = 'none';
-            }
-        });
-        
-        async function signIn() {
-            await adminDb.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.href
+            // 3. Listen for Auth Changes
+            adminDb.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    if(loginSection) loginSection.style.display = 'none';
+                    if(adminSection) adminSection.style.display = 'block';
+                    fetchLocations();
+                } else {
+                    if(loginSection) loginSection.style.display = 'block';
+                    if(adminSection) adminSection.style.display = 'none';
                 }
             });
-        }
         
-        async function signOut() {
-            await adminDb.auth.signOut();
-            location.reload();
-        }
+            // Make functions global so the buttons can find them
+            window.signIn = async () => {
+                await adminDb.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: window.location.href }
+                });
+            };
         
-        async function fetchLocations() {
-            const { data, error } = await adminDb.from('locations').select('*').order('city', { ascending: true });
-            if (data) {
-                locationList.innerHTML = data.map(loc => `
-                    <tr>
-                        <td>${loc.city}, ${loc.country}</td>
-                        <td>${loc.count}</td>
-                        <td><button class="delete-btn" onclick="deleteLocation(${loc.id})">Delete</button></td>
-                    </tr>
-                `).join('');
-            }
-        }
+            window.signOut = async () => {
+                await adminDb.auth.signOut();
+                location.reload();
+            };
         
-        async function deleteLocation(id) {
-            if (confirm("Are you sure you want to delete this pin?")) {
-                const { error } = await adminDb.from('locations').delete().eq('id', id);
-                if (error) {
-                    alert("Error: Only the authorized admin email can delete pins.");
-                } else {
-                    fetchLocations();
+            window.fetchLocations = async () => {
+                const { data } = await adminDb.from('locations').select('*').order('city', { ascending: true });
+                if (data && locationList) {
+                    locationList.innerHTML = data.map(loc => `
+                        <tr>
+                            <td>${loc.city}, ${loc.country}</td>
+                            <td>${loc.count}</td>
+                            <td><button class="delete-btn" onclick="deleteLocation(${loc.id})">Delete</button></td>
+                        </tr>
+                    `).join('');
                 }
-            }
-        }
+            };
+        
+            window.deleteLocation = async (id) => {
+                if (confirm("Are you sure?")) {
+                    const { error } = await adminDb.from('locations').delete().eq('id', id);
+                    if (error) {
+                        alert("Only the authorized admin email can delete pins.");
+                    } else {
+                        fetchLocations();
+                    }
+                }
+            };
+        });
     </script>
 </body>
 </html>
