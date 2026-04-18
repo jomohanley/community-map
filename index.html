@@ -32,64 +32,42 @@
         const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co'.trim();
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4'.trim();
        
-        // This line uses the library (supabase) to create our client (mapDb)
+        // ... (Your existing SB_URL and SB_KEY code) ...
         const mapDb = supabase.createClient(SB_URL, SB_KEY);
-
-        // 2. Initialize Map
-        var map = L.map('map').setView([20, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        // 3. Generate QR Code
-        new QRCode(document.getElementById("qrcode"), {
-                text: window.location.href,
-                width: 60,
-                height: 60
-        });
-       // new QRCode(document.getElementById("qrcode"), {
-       //     text: window.location.href.replace('index.html', '') + "mobile.html",
-       //     width: 80,
-       //     height: 80
-       // });
-
+        
+        // 1. Function to place a single pin (shared by loader and listener)
+        function addPinToMap(l) {
+            L.marker([l.lat, l.lon])
+             .addTo(map)
+             .bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
+        }
+        
+        // 2. Initial load of all pins
         async function loadPins() {
             const { data } = await mapDb.from('locations').select('*');
-            if (data) {
-                data.forEach(l => {
-                    L.marker([l.lat, l.lon]).addTo(map).bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
-                });
-            }
+            if (data) data.forEach(l => addPinToMap(l));
         }
-
-        async function submitLoc() {
-            const city = document.getElementById('city').value;
-            const country = document.getElementById('country').value;
-            if(!city || !country) return alert("Please fill in both fields!");
-
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${city},${country}`);
-            const geo = await res.json();
-            
-            if (geo.length > 0) {
-                const { lat, lon } = geo[0];
-                
-                // Fetch existing count
-                const { data: existing } = await mapDb.from('locations')
-                    .select('count')
-                    .match({city, country})
-                    .single();
-                
-                const newCount = existing ? existing.count + 1 : 1;
-
-                // Save/Update
-                await mapDb.from('locations').upsert({ 
-                    city, country, lat, lon, count: newCount 
-                }, { onConflict: 'city,country' });
-
-                alert("Pinned!");
-                location.reload();
-            } else {
-                alert("Location not found.");
+        
+        // 3. THE REALTIME LISTENER
+        // This waits for any changes to the 'locations' table
+        mapDb
+          .channel('schema-db-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen for inserts, updates, and deletes
+              schema: 'public',
+              table: 'locations',
+            },
+            (payload) => {
+                console.log('Change received!', payload);
+                // If it's a new pin or an update, just refresh the map view
+                // For a simple project, reloading the data is cleanest:
+                addPinToMap(payload.new); 
             }
-        }
+          )
+          .subscribe();
+        
         loadPins();
     </script>
 </body>
