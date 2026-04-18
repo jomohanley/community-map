@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-        #map { flex-grow: 1; width: 100%; height: 500px; } /* Explicit height is required */
+        #map { flex-grow: 1; width: 100%; height: 500px; }
         .input-panel { padding: 20px; background: white; border-top: 1px solid #ccc; display: flex; gap: 10px; justify-content: center; align-items: center; }
         #qrcode { margin-left: 15px; }
         input, button { padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
@@ -28,18 +28,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
-        // Use your actual credentials from Supabase
-        const SUPABASE_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
+        // 1. We name our variable 'mapDb' to avoid clashing with the 'supabase' library name
+        const URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
         
-        // Correct initialization
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // This line uses the library (supabase) to create our client (mapDb)
+        const mapDb = supabase.createClient(URL, KEY);
 
-        // Map setup
+        // 2. Initialize Map
         var map = L.map('map').setView([20, 0], 2);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // QR Code setup
+        // 3. Generate QR Code
         new QRCode(document.getElementById("qrcode"), {
             text: window.location.href,
             width: 60,
@@ -47,7 +47,7 @@
         });
 
         async function loadPins() {
-            const { data, error } = await supabaseClient.from('locations').select('*');
+            const { data } = await mapDb.from('locations').select('*');
             if (data) {
                 data.forEach(l => {
                     L.marker([l.lat, l.lon]).addTo(map).bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
@@ -66,22 +66,23 @@
             if (geo.length > 0) {
                 const { lat, lon } = geo[0];
                 
-                // Logic to increment count if city exists
-                const { data: existing } = await supabaseClient.from('locations')
+                // Fetch existing count
+                const { data: existing } = await mapDb.from('locations')
                     .select('count')
                     .match({city, country})
                     .single();
                 
                 const newCount = existing ? existing.count + 1 : 1;
 
-                await supabaseClient.from('locations').upsert({ 
+                // Save/Update
+                await mapDb.from('locations').upsert({ 
                     city, country, lat, lon, count: newCount 
                 }, { onConflict: 'city,country' });
 
                 alert("Pinned!");
                 location.reload();
             } else {
-                alert("Location not found. Try a nearby major city.");
+                alert("Location not found.");
             }
         }
         loadPins();
