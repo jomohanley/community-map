@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Admin - Secure</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f9f9f9; }
+        #adminContent { display: none; }
+        .login-container { max-width: 400px; margin: auto; text-align: center; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .google-btn { padding: 12px 24px; background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .delete-btn { color: #ff4d4d; border: 1px solid #ff4d4d; background: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+        .delete-btn:hover { background: #ff4d4d; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="loginSection" class="login-container">
+        <h2>Admin Access</h2>
+        <p>Please sign in with your authorized Google account to manage map pins.</p>
+        <button class="google-btn" onclick="signInWithGoogle()">Login with Google</button>
+    </div>
+
+    <div id="adminContent">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Map Submissions</h2>
+            <button onclick="signOut()" style="padding: 8px 16px;">Sign Out</button>
+        </div>
+        <table id="adminTable">
+            <thead>
+                <tr><th>City</th><th>Country</th><th>Count</th><th>Action</th></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://your-project.supabase.co';
+        const SUPABASE_KEY = 'your-anon-key';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function signInWithGoogle() {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + window.location.pathname }
+            });
+            if (error) alert("Login failed: " + error.message);
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            location.reload();
+        }
+
+        // Listen for Auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                loadAdminData();
+            }
+        });
+
+        async function loadAdminData() {
+            const { data, error } = await supabase.from('locations').select('*').order('city', { ascending: true });
+            
+            if (error) {
+                console.error(error);
+                alert("Permission denied. Check your RLS settings!");
+                return;
+            }
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ''; 
+            data.forEach(loc => {
+                let row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${loc.city}</td>
+                    <td>${loc.country}</td>
+                    <td>${loc.count}</td>
+                    <td><button class="delete-btn" onclick="deleteLoc(${loc.id})">Delete</button></td>
+                `;
+            });
+        }
+
+        async function deleteLoc(id) {
+            if(confirm("Permanently delete this pin?")) {
+                const { error } = await supabase.from('locations').delete().eq('id', id);
+                if (error) alert("Error: " + error.message);
+                else loadAdminData();
+            }
+        }
+    </script>
+</body>
+</html>
