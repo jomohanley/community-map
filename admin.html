@@ -37,62 +37,64 @@
     </div>
 
     <script>
-        // Replace the top of your script with this:
-        const SUPABASE_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
+        // 1. Configuration (Same as your map page)
+        const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
         
-        // Use 'supabase' directly, not 'lib.supabase'
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        async function signInWithGoogle() {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin + window.location.pathname }
-            });
-            if (error) alert("Login failed: " + error.message);
-        }
-
-        async function signOut() {
-            await supabase.auth.signOut();
-            location.reload();
-        }
-
-        // Listen for Auth changes
-        supabase.auth.onAuthStateChange((event, session) => {
+        // 2. Initialize with a unique name
+        const adminDb = supabase.createClient(SB_URL, SB_KEY);
+        
+        const loginSection = document.getElementById('login-section');
+        const adminSection = document.getElementById('admin-section');
+        const locationList = document.getElementById('location-list');
+        
+        // 3. Listen for Auth Changes
+        adminDb.auth.onAuthStateChange((event, session) => {
             if (session) {
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('adminContent').style.display = 'block';
-                loadAdminData();
+                loginSection.style.display = 'none';
+                adminSection.style.display = 'block';
+                fetchLocations();
+            } else {
+                loginSection.style.display = 'block';
+                adminSection.style.display = 'none';
             }
         });
-
-        async function loadAdminData() {
-            const { data, error } = await supabase.from('locations').select('*').order('city', { ascending: true });
-            
-            if (error) {
-                console.error(error);
-                alert("Permission denied. Check your RLS settings!");
-                return;
-            }
-
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = ''; 
-            data.forEach(loc => {
-                let row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${loc.city}</td>
-                    <td>${loc.country}</td>
-                    <td>${loc.count}</td>
-                    <td><button class="delete-btn" onclick="deleteLoc(${loc.id})">Delete</button></td>
-                `;
+        
+        async function signIn() {
+            await adminDb.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.href
+                }
             });
         }
-
-        async function deleteLoc(id) {
-            if(confirm("Permanently delete this pin?")) {
-                const { error } = await supabase.from('locations').delete().eq('id', id);
-                if (error) alert("Error: " + error.message);
-                else loadAdminData();
+        
+        async function signOut() {
+            await adminDb.auth.signOut();
+            location.reload();
+        }
+        
+        async function fetchLocations() {
+            const { data, error } = await adminDb.from('locations').select('*').order('city', { ascending: true });
+            if (data) {
+                locationList.innerHTML = data.map(loc => `
+                    <tr>
+                        <td>${loc.city}, ${loc.country}</td>
+                        <td>${loc.count}</td>
+                        <td><button class="delete-btn" onclick="deleteLocation(${loc.id})">Delete</button></td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+        async function deleteLocation(id) {
+            if (confirm("Are you sure you want to delete this pin?")) {
+                const { error } = await adminDb.from('locations').delete().eq('id', id);
+                if (error) {
+                    alert("Error: Only the authorized admin email can delete pins.");
+                } else {
+                    fetchLocations();
+                }
             }
         }
     </script>
