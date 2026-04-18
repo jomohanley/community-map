@@ -28,12 +28,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
-        // 1. We name our variable 'mapDb' to avoid clashing with the 'supabase' library name
-        const URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
-        
+        // 1. Define variables with NO spaces or trailing slashes
+        const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co'.trim();
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4'.trim();
+       
         // This line uses the library (supabase) to create our client (mapDb)
-        const mapDb = supabase.createClient(URL, KEY);
+        const mapDb = supabase.createClient(SB_URL, SB_KEY);
 
         // 2. Initialize Map
         var map = L.map('map').setView([20, 0], 2);
