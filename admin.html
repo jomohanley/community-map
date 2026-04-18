@@ -37,9 +37,12 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://your-project.supabase.co';
+        // Replace the top of your script with this:
+        const SUPABASE_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Use 'supabase' directly, not 'lib.supabase'
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function signInWithGoogle() {
             const { error } = await supabase.auth.signInWithOAuth({
