@@ -24,6 +24,9 @@
             <h1>Oshawa Campus Origins Map</h1>
             <img src="./community-map-mobile-qr.png" width="80" height="80">
         </div>
+        <div id="counter-box" style="padding: 10px; background: white; text-align: center; font-weight: bold; border-bottom: 1px solid #ccc;">
+            Total Location Submissions: <span id="total-count">0</span>
+        </div>        
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -43,32 +46,32 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
         // 3. Define the functions (Put these BEFORE they are called)
-        function addPinToMap(l) {
-            if (!l) return;
-            const key = `${l.city}-${l.country}`;
-            if (markerStorage[key]) map.removeLayer(markerStorage[key]);
-        
-            const newMarker = L.marker([l.lat, l.lon])
-                .addTo(map)
-                .bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
-            
-            markerStorage[key] = newMarker;
+        // Function to calculate and display the total
+        async function updateTotalDisplay() {
+            const { data } = await mapDb.from('locations').select('count');
+            if (data) {
+                const total = data.reduce((sum, row) => sum + (row.count || 0), 0);
+                document.getElementById('total-count').innerText = total;
+            }
         }
         
         async function loadPins() {
             const { data } = await mapDb.from('locations').select('*');
-            if (data) data.forEach(l => addPinToMap(l));
+            if (data) {
+                data.forEach(l => addPinToMap(l));
+                updateTotalDisplay(); // Initial count
+            }
         }
         
-        // 4. Start the Realtime Listener
+        // Update the Realtime Listener to also refresh the counter
         mapDb
           .channel('schema-db-changes')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, 
           (payload) => {
               if (payload.new && payload.new.lat) {
                   addPinToMap(payload.new);
+                  updateTotalDisplay(); // Live update the total!
               } else if (payload.eventType === 'DELETE') {
-                  // If you delete from admin, this clears the pin from the map too!
                   location.reload(); 
               }
           })
