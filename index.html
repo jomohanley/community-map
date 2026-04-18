@@ -41,9 +41,9 @@
 
         // 3. Generate QR Code
         new QRCode(document.getElementById("qrcode"), {
-            text: window.location.href,
-            width: 60,
-            height: 60
+            text: window.location.href.replace('index.html', '') + "mobile.html",
+            width: 80,
+            height: 80
         });
 
         async function loadPins() {
