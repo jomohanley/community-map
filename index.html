@@ -35,45 +35,41 @@
         // ... (Your existing SB_URL and SB_KEY code) ...
         const mapDb = supabase.createClient(SB_URL, SB_KEY);
         
-        // 1. Function to place a single pin (shared by loader and listener)
+        // 1. Create a place to store our markers so we can find them later
+        const markerStorage = {};
+        
+        // 2. Updated function to handle pins
         function addPinToMap(l) {
-            L.marker([l.lat, l.lon])
-             .addTo(map)
-             .bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
+            const key = `${l.city}-${l.country}`;
+            
+            // If a pin for this city already exists on the map, remove it first
+            if (markerStorage[key]) {
+                map.removeLayer(markerStorage[key]);
+            }
+        
+            // Create the new marker with the updated count
+            const newMarker = L.marker([l.lat, l.lon])
+                .addTo(map)
+                .bindPopup(`<b>${l.city}</b>: ${l.count} user(s)`);
+            
+            // Save the new marker to our storage
+            markerStorage[key] = newMarker;
         }
         
-        // 2. Initial load of all pins
-        async function loadPins() {
-            const { data } = await mapDb.from('locations').select('*');
-            if (data) data.forEach(l => addPinToMap(l));
-        }
-        
-        // 3. THE REALTIME LISTENER
-        // Ensure map is defined globally at the top of your script
-        var map = L.map('map').setView([20, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
-        // The Realtime Listener
+        // 3. Update the Realtime Listener
         mapDb
           .channel('schema-db-changes')
           .on(
             'postgres_changes',
             {
-              event: 'INSERT', // Only listen for new pins
+              event: '*', // Listen for both INSERT and UPDATE
               schema: 'public',
               table: 'locations',
             },
             (payload) => {
-                console.log('New pin received:', payload);
-                
-                // FIX: Ensure we use the 'new' property from the payload
-                const newPin = payload.new;
-                
-                // Double check that we have lat/lon before trying to add to map
-                if (newPin && newPin.lat && newPin.lon) {
-                    L.marker([newPin.lat, newPin.lon])
-                     .addTo(map) // This 'map' must match your L.map variable above
-                     .bindPopup(`<b>${newPin.city}</b>: ${newPin.count} user(s)`);
+                // Use payload.new to get the updated row data
+                if (payload.new && payload.new.lat) {
+                    addPinToMap(payload.new);
                 }
             }
           )
