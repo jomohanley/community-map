@@ -33,91 +33,18 @@
 </div>
 
 <script>
-    const URL = 'https://gfkqkhijzacsyzowpvag.supabase.co';
-    const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4';
+    // 1. Define variables with NO spaces or trailing slashes
+    const SB_URL = 'https://gfkqkhijzacsyzowpvag.supabase.co'.trim();
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma3FraGlqemFjc3l6b3dwdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzkyMDAsImV4cCI6MjA5MjAxNTIwMH0.09A6_FDSLKZ0QCx8WLgfOvn4ctlgmUmL1g40cOKedA4'.trim();
     
-    // This line uses the library (supabase) to create our client (mapDb)
-    const mapDb = supabase.createClient(URL, KEY);
-
-    const input = document.getElementById('citySearch');
-    const suggestions = document.getElementById('suggestions');
-    const submitBtn = document.getElementById('submitBtn');
-    const message = document.getElementById('message');
-
-    let selectedLocation = null;
-    let timeout = null;
-
-    // Listen for typing with a slight delay (debounce) to save API hits
-    input.addEventListener('input', () => {
-        clearTimeout(timeout);
-        const query = input.value;
-        if (query.length < 3) {
-            suggestions.style.display = 'none';
-            return;
-        }
-
-        timeout = setTimeout(async () => {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&addressdetails=1&limit=5`);
-            const data = await res.json();
-            
-            suggestions.innerHTML = '';
-            if (data.length > 0) {
-                data.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
-                    div.textContent = item.display_name;
-                    div.onclick = () => selectCity(item);
-                    suggestions.appendChild(div);
-                });
-                suggestions.style.display = 'block';
-            }
-        }, 300);
-    });
-
-    function selectCity(item) {
-        input.value = item.display_name;
-        selectedLocation = {
-            city: item.address.city || item.address.town || item.address.village || item.display_name.split(',')[0],
-            country: item.address.country,
-            lat: item.lat,
-            lon: item.lon
-        };
-        suggestions.style.display = 'none';
-        submitBtn.disabled = false;
+    // 2. Initialize the client
+    let mapDb;
+    try {
+        mapDb = supabase.createClient(SB_URL, SB_KEY);
+        console.log("Supabase initialized successfully");
+    } catch (e) {
+        console.error("Initialization error:", e.message);
     }
-
-    submitBtn.onclick = async () => {
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Sending...';
-
-        // Get current count
-        const { data: existing } = await mapDb.from('locations')
-            .select('count')
-            .match({ city: selectedLocation.city, country: selectedLocation.country })
-            .single();
-        
-        const newCount = existing ? existing.count + 1 : 1;
-
-        // Save to Supabase
-        const { error } = await mapDb.from('locations').upsert({ 
-            city: selectedLocation.city, 
-            country: selectedLocation.country, 
-            lat: selectedLocation.lat, 
-            lon: selectedLocation.lon, 
-            count: newCount 
-        }, { onConflict: 'city,country' });
-
-        if (!error) {
-            input.style.display = 'none';
-            submitBtn.style.display = 'none';
-            message.style.display = 'block';
-            setTimeout(() => location.reload(), 3000);
-        } else {
-            alert("Error saving location. Please try again.");
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Pin My Location';
-        }
-    };
 </script>
 
 </body>
