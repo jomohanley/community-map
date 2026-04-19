@@ -81,7 +81,8 @@
                 if (data && locationList) {
                     locationList.innerHTML = data.map(loc => `
                         <tr>
-                            <td>${loc.city}, ${loc.country}</td>
+                            <td>${loc.city}</td>
+                            <td>${loc.country}</td>
                             <td>${loc.count}</td>
                             <td><button class="delete-btn" onclick="deleteLocation(${loc.id})">Delete</button></td>
                         </tr>
