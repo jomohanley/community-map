@@ -4,16 +4,47 @@
     <title>Our World Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-        #map { flex-grow: 1; width: 100%; height: 500px; }
-        /*.input-panel { padding: 20px; background: white; border-top: 1px solid #ccc; display: flex; gap: 10px; justify-content: center; align-items: center; } */
-        .input-panel { padding: 20px; background: white; border-top: 1px solid #ccc; display: flex; gap: 10px; justify-content: space-between; align-items: center; }
-        .counter-box { padding: 10px 20px; background: #f9f9f9; text-align: right; font-weight: bold; border: 1px solid #eee; border-radius: 8px; }
-        .container {
-          display: flex; /* Aligns children horizontally */
-          align-items: center; /* Vertically centers the text relative to the image */
-          gap: 15px; /* Adds space between the image and text */
-        }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+    
+      #map {
+        flex-grow: 1;
+        width: 100%;
+        /* Remove fixed height to let flex-grow work */
+      }
+    
+      .input-panel {
+        padding: 10px 20px;
+        background: white;
+        border-top: 1px solid #ccc;
+        display: flex;
+        /* This pushes the container to the left and counter-box to the right */
+        justify-content: space-between; 
+        align-items: center;
+      }
+    
+      .container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+    
+      .counter-box {
+        padding: 10px 20px;
+        background: #f9f9f9;
+        text-align: right;
+        font-weight: bold;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        /* Prevents the box from shrinking */
+        white-space: nowrap; 
+      }
     </style>
 </head>
 <body>
