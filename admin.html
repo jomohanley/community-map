@@ -47,9 +47,9 @@
             // 2. Initialize
             const adminDb = supabase.createClient(SB_URL, SB_KEY);
         
-            const loginSection = document.getElementById('login-section');
-            const adminSection = document.getElementById('admin-section');
-            const locationList = document.getElementById('location-list');
+            const loginSection = document.getElementById('loginSection');
+            const adminSection = document.getElementById('adminContent');
+            const locationList = document.getElementById('tableBody');
         
             // 3. Listen for Auth Changes
             adminDb.auth.onAuthStateChange((event, session) => {
