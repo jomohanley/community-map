@@ -50,7 +50,17 @@
             const loginSection = document.getElementById('loginSection');
             const adminSection = document.getElementById('adminContent');
             const locationList = document.getElementById('tableBody');
-        
+
+            const checkSession = async () => {
+              const { data: { session } } = await adminDb.auth.getSession();
+              if (session) {
+                loginSection.style.display = 'none';
+                adminSection.style.display = 'block';
+                fetchLocations();
+              }
+            };
+            checkSession();  
+            
             // 3. Listen for Auth Changes
             adminDb.auth.onAuthStateChange((event, session) => {
                 if (session) {
@@ -61,8 +71,8 @@
                     if(loginSection) loginSection.style.display = 'block';
                     if(adminSection) adminSection.style.display = 'none';
                 }
-            });
-        
+            });    
+            
             // Make functions global so the buttons can find them
             window.signIn = async () => {
                 await adminDb.auth.signInWithOAuth({
