@@ -19,32 +19,24 @@
         /* Remove fixed height to let flex-grow work */
       }
     
-      .input-panel {
-        padding: 10px 20px;
-        background: white;
-        border-top: 1px solid #ccc;
-        display: flex;
-        /* This pushes the container to the left and counter-box to the right */
-        justify-content: space-between; 
-        align-items: center;
-      }
-    
-      .container {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-    
-      .counter-box {
-        padding: 10px 20px;
-        background: #f9f9f9;
-        text-align: right;
-        font-weight: bold;
-        border: 1px solid #eee;
-        border-radius: 8px;
-        /* Prevents the box from shrinking */
-        white-space: nowrap; 
-      }
+        .input-panel {
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #ccc;
+            display: flex;
+            flex-direction: column; /* This stacks children on top of each other */
+            align-items: center;    /* This centers them horizontally */
+            gap: 10px;
+        }
+        
+        /* Adjust the counter-box for the bottom position */
+        .counter-box {
+            width: 100%;
+            text-align: center;     /* Centers the text */
+            font-weight: bold;
+            padding-top: 5px;
+            border-top: 1px solid #eee; /* Optional: adds a tiny separator line */
+        }
     </style>
 </head>
 <body>
